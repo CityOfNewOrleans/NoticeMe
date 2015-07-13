@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script src="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5compact/"></script>
+        <link rel="stylesheet" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5/js/dojo/dijit/themes/claro/claro.css">
+        <link rel="stylesheet" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5/js/esri/css/esri.css">
+        <link rel="stylesheet" href="jbr3_view.css">
+        <script src="assets/maps/jbr3_view.js"></script>
+        <script>
+            dojo.require('esri.map');
+            dojo.require('esri.tasks.PrintTask')
+            dojo.require('esri.tasks.geometry');
+            dojo.require('esri.toolbars.draw');
+            dojo.ready(init);
+            
+            var map;
+            var drawTool;
+            var geomSvc;
+            var printer;
+            var measurer;
+
+            function init()
+            {
+                map = new esri.Map('map', {
+                    basemap: 'topo',
+                    center: [-90.0, 30.00],
+                    zoom: 12,
+                    sliderStyle: 'small'
+                });
+                printer = new mapPrinter();
+
+                var geomURL = 'http://tasks.arcgisonline.com/ArcGIS/rest/services/Geometry/GeometryServer';
+                drawTool = new esri.toolbars.Draw(map);
+                geomSvc = new esri.tasks.GeometryService(geomURL);
+                measurer = new mapMeasurer(drawTool, map, geomSvc);
+            }
+        </script>
+    </head>
+    <body class="claro">
+        <div id="map"></div>
+        <div id="drag">
+            <b>- Measurements -</b>
+            <p>
+                <input id="measuring" type="checkbox" value="measure" onClick="measurer.startStopMeasure();">
+                <label for="measuring">
+                    Begin Measurements
+                </label>
+            </p>
+            <p id="res_title">Results:</p>
+            <p id="seg_length"></p>
+            <p id="total_length"></p>
+        </div>
+        <div id="print" onClick="printer.doPrint();">
+            <span id="printmsg"><b>Print</b></span>
+            <img id="loadimg" src="jbr3_loader.gif"></div>
+            <a href="" id="printlink" style="display: none;"></a>
+    </body>
+</html>

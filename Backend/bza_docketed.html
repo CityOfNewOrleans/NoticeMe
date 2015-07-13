@@ -1,0 +1,15 @@
+            <div class="item">
+                <h3><a href="http://onestopapp.nola.gov/Redirect.aspx?SearchString={{item.data.RefCode}}">{{item.data.Location}}{{' ('~item.data.Name~') ' if item.data.Name != item.data.Location else ''}}</a> <span class="small">(Ref. Code: {{item.data.RefCode}})<br />
+                <strong>{{item.displayname}}</strong></span></h3>
+                <div class="meta">
+                    <p><strong>Meeting Date:</strong> {{item.data.D_Meeting}}<br />
+                    <strong>Docket Number:</strong> {{item.data.DocketNum}}<br />
+                    <strong>Type:</strong> {{item.data.Type}}<br />
+					<strong>Supporting Documents Available:</strong> {% if item.data.DocsPublic == 0 %}No{% else %}Yes{% endif %}</p></p>
+                </div>
+                <div class="detail" >
+                    <h4>Description</h4>
+                    <p>{{item.data.Descr}}</p>                
+                    <p><a href="http://noticeme.nola.gov/about#feedback" target="_blank">How do I submit written feedback?</a></p>
+                </div>
+            </div>

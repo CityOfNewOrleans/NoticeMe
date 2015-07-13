@@ -1,0 +1,593 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimal-ui">
+	<meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="">
+    <meta name="author" content="">
+	<link rel="icon" type="image/png" href="/static/img/CNO_favicon.ico">
+    <title>NoticeMe</title>
+
+    <!-- Load 'Open Sans' web font from Google -->
+	<link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,600italic,700italic,400,600,800,700' rel='stylesheet' type='text/css'>
+    <!-- Bootstrap core CSS -->
+    <link href="../static/css/bootstrap.modified.css" rel="stylesheet">
+	<!-- Custom styles for this template -->
+    <link href="../static/css/core.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="../static/js/html5shiv.js"></script>
+      <script src="../static/js/respond.min.js"></script>
+    <![endif]-->
+
+	<!-- Load ArcGIS tools -->
+	<script src="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5compact/"></script>
+	<link rel="stylesheet" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5/js/dojo/dijit/themes/claro/claro.css">
+	<link rel="stylesheet" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.5/js/esri/css/esri.css">
+	<link rel="stylesheet" href="../static/map/jbr3_view.css">
+	<script src="https://login.persona.org/include.js"></script>
+	<script src="http://crypto-js.googlecode.com/svn/tags/3.1.2/build/rollups/md5.js"></script>
+	<script src="../static/map/jbr3_view.js"></script>
+  </head>
+  <body class="{% if session.email %}logged-in{%else%}logged-out{%endif%}">
+  	<div id="wrap">
+		<!-- Start Navbar -->
+		<div class="navbar navbar-default navbar-static-top" role="navigation">
+			<div class="navbar-logo">
+				<a class="navbar-brand" href="/"><img src="../static/img/noticeme-logo.png" /></a>
+				<p class="navbar-text hidden-xs">An early notification tool for land use changes in the City of New Orleans</p>
+			</div>
+			<ul class="navbar-help">
+				{% if session.email %}
+				<li style="display: none;"><a class="loginBtn" href="#" onClick="ga('send', 'event', 'Account', 'Click', 'Log In-Register-Header');"><span class="glyphicon glyphicon-log-in" ></span><span class="hidden-xs"> Log in</span></a></li>
+				<li><a id="logoutBtn" href="#" onClick="ga('send', 'event', 'Account', 'Click', 'Log Out');"><span class="glyphicon glyphicon-log-out"></span><span class="hidden-xs"> Log out</span></a></li>
+				{% else %}
+				<li><a class="loginBtn" id="loginBtn" href="#" onClick="ga('send', 'event', 'Account', 'Click', 'Log In-Register-Header');"><span class="glyphicon glyphicon-log-in"></span><span class="hidden-xs"> Log in / Register</span></a></li>
+				<li style="display: none;" onClick="ga('send', 'event', 'Account', 'Click', 'Log Out');"><a id="logoutBtn" href="#"><span class="glyphicon glyphicon-log-out"></span><span class="hidden-xs"> Log out</span></a></li>
+				{% endif %}
+				<li class="hidden-xs"><a id="UVBtn" href="#" onClick="ga('send', 'event', 'UserVoice', 'Click', 'Leave UserVoice feedback');"><span class="glyphicon glyphicon-question-sign"></span> Help</a></li>
+				<li class="hidden-xs"><a id="helpBtn" href="#" onClick="ga('send', 'event', 'Help', 'Click', 'Take the tour button');"><span class="glyphicon glyphicon-flag"></span> Take the tour</a></li>
+				<li><a id="aboutBtn" href="/about"><span class="glyphicon glyphicon-info-sign"></span><span class="hidden-xs"> About NoticeMe</span></a></li>
+			</ul>
+	    </div>
+		<!-- End Navbar -->
+
+		<!-- Start Main Content Row -->
+		<div class="row row-offcanvas row-offcanvas-left max-height" id="sidebar-wrapper">
+
+			<!--	Start Drawer Sidebar
+			1. Notification drawer for custom areas
+			2. Notification drawer for pre-defined areas
+			3. Main drawer for area navigation & settings
+			-->
+
+			<!-- 1. Notification drawer for custom areas -->
+			<div class="col-xs-12 col-sm-4 col-md-3 sidebar-offcanvas max-height dialog" id="edit-dialog">
+				<div class="panel-group max-height" id="edit-dialog-accordion">
+					<div class="panel panel-default">
+						<div class="panel-content">
+							<div class="panel-body">
+								<input id="name-area" type="text" placeholder="Name this area..."/>
+								<h4>Notify me of...</h4>
+								<ul id="editnotices" class="checklist">
+									<li><input id="edt-bza" type="checkbox" /> <strong>Board of Zoning Adjustments</strong><br /><span class="small text-muted">(Variance, Decision Appeals, etc.)</span></li>
+									<li><input id="edt-cpc" type="checkbox" /> <strong>City Planning Commission</strong><br /><span class="small text-muted">(Conditional Use, Zoning Change, Text Amendment, Major Subdivision, etc.)</span></li>
+									<li><input id="edt-zon" type="checkbox" /> <strong>Zoning Confirmation Requests</strong><br /><span class="small text-muted">(Zoning Verification or Non-Conforming Use Determination)</span></li>
+								</ul>
+							</div>
+							<div class="dialog-confirm">
+								<a id="edit-dialog-delete"class="pull-left text-muted" href="#" onClick="ga('send', 'event', 'Drawing', 'Click', 'Delete');">Delete</a>
+								<button class="btn btn-primary pull-right" id="edit-dialog-close">OK</button>
+								<button class="btn btn-warning pull-right" id="edit-dialog-redraw" onClick="ga('send', 'event', 'Drawing', 'Click', 'Redraw');">Redraw</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End 1. Notification drawer for custom areas -->
+
+			<!-- Start 2. Notification drawer for pre-defined areas -->
+			<div class="col-xs-12 col-sm-4 col-md-3 sidebar-offcanvas max-height dialog" id="add-dialog">
+				<div class="panel-group max-height" id="add-dialog-accordion">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+							<h4 class="panel-title panel-title-add">
+							</h4>
+						</div>
+						<div class="panel-content">
+							<div class="panel-body">
+								<button id="view-on-map" class="btn btn-primary visible-xs"><i class="glyphicon glyphicon-globe"></i> View on map</button>
+								<h4>Notify me of...</h4>
+								<ul id="noticetypes" class="checklist">
+									<li><input id="add-bza" type="checkbox" /> <strong>Board of Zoning Adjustments</strong><br /><span class="small text-muted">(Variance, Decision Appeals, etc.)</span></li>
+									<li><input id="add-cpc" type="checkbox" /> <strong>City Planning Commission</strong><br /><span class="small text-muted">(Conditional Use, Zoning Change, Text Amendment, Major Subdivision, etc.)</span></li>
+									<li><input id="add-zon" type="checkbox" /> <strong>Zoning Confirmation Requests</strong><br /><span class="small text-muted">(Zoning Verification or Non-Conforming Use Determination)</span></li>
+								</ul>
+							</div>
+							<div class="dialog-confirm">
+								<a id="add-dialog-cancel" class="pull-left text-muted" href="#">Cancel</a>
+								<button class="btn btn-primary pull-right" id="add-dialog-close">OK</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End 2. Notification drawer for pre-defined areas -->
+
+			<!-- Start 3. Main drawer for areas & settings -->
+			<div class="col-xs-12 col-sm-4 col-md-3 max-height" id="sidebar" role="navigation">
+				<div class="panel-group max-height" id="accordion">
+					<div class="panel panel-default">
+						<div class="panel-heading" id="heading-my-areas">
+							<h4 class="panel-title">
+							<a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" onClick="ga('send', 'event', 'Navigation', 'Click', 'My areas');">
+							  <span class="glyphicon glyphicon-eye-open"></span> My areas
+							</a>
+							</h4>
+						</div>
+						<div id="collapseOne" class="panel-collapse collapse in">
+							<div class="panel-content">
+								<div class="panel-body">
+									<button class="btn btn-primary pull-right" id="edit-dialog-open" style="display:none;" onClick="ga('send', 'event', 'Drawing', 'Click', 'Add new area');"><span class="glyphicon glyphicon-plus"></span> Add new area</button>
+									<button class="btn btn-primary pull-right loginBtn" id="areas-login" onClick="ga('send', 'event', 'Account', 'Click', 'Log In-Register-My areas');"><span class="glyphicon glyphicon-log-in"></span> Log in to draw custom areas</button>
+								</div>
+								<ul id="userarea" class="list-group">
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="panel panel-default">
+						<div class="panel-heading" id="heading-neighborhoods">
+							<h4 class="panel-title">
+							<a data-toggle="collapse" data-parent="#accordion" href="#collapseTwo" onClick="ga('send', 'event', 'Navigation', 'Click', 'Neighborhood associations');">
+							  <span class="glyphicon glyphicon-home"></span> Neighborhood associations
+							</a>
+							</h4>
+						</div>
+						<div id="collapseTwo" class="panel-collapse collapse">
+							<div class="panel-content">
+								<div class="panel-body">
+								</div>
+								<ul id="srno" class="list-group">
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="panel panel-default">
+						<div class="panel-heading" id="heading-districts">
+							<h4 class="panel-title">
+							<a data-toggle="collapse" data-parent="#accordion" href="#collapseThree" onClick="ga('send', 'event', 'Navigation', 'Click', 'Council districts');">
+							<span class="glyphicon glyphicon-flag"></span> Council districts
+							</a>
+							</h4>
+						</div>
+						<div id="collapseThree" class="panel-collapse collapse">
+							<div class="panel-content">
+								<div class="panel-body">
+
+								</div>
+								<ul id="council" class="list-group">
+								</ul>
+							</div>
+						</div>
+					</div>
+					<div class="panel panel-default" id="my-account">
+						<div class="panel-heading">
+							<h4 class="panel-title">
+							<a data-toggle="collapse" data-parent="#accordion" href="#collapseFour" onClick="ga('send', 'event', 'Navigation', 'Click', 'My account');">
+							<span class="glyphicon glyphicon-cog"></span> My account
+							</a>
+							</h4>
+						</div>
+						<div id="collapseFour" class="panel-collapse collapse">
+							<div class="panel-content">
+								<div style="{% if session.email %}display: block;{%else%}display:none{%endif%}" id="userinfo" class="panel-body">
+									<h4>User information</h4>
+									<div class="well" style="overflow-x: auto;">
+										<p><strong>Email address:</strong><br /><span id="emailaddr">{{ session.email }}</span></p>
+										<!-- <p><a href="#">Change email address</a></p>
+										<p><a href="#">Change password</a> -->
+									</div>
+
+									<h4>Email preferences</h4>
+									<div class="well" id="email-prefs">
+										<p><strong>You will only receive an email if there are notices in your area(s).</strong></p>
+										<div class="radio">
+										  <label>
+											<input type="radio" name="optionsRadios" value="option1" id="one-per-day" class="pref-radio">
+											Send me up to one email per day
+										  </label>
+										</div>
+										<div class="radio">
+										  <label>
+											<input type="radio" name="optionsRadios" value="option2" id="one-per-week" class="pref-radio" checked>
+											Send me up to one email per week
+										  </label>
+										</div>
+										<div class="checkbox">
+											<label>
+												<input type="checkbox" id="add-new" class="pref-radio"> Automatically add new notice types to my areas
+											</label>
+										</div>
+										<div class="checkbox">
+											<label>
+												<input type="checkbox" id="citywide" class="pref-radio"> Send me notices about changes that affect the entire city
+											</label>
+										</div>
+									</div>
+								</div>
+								<div id="suggestsignin" class="panel-body" style="{% if session.email %}display: none;{%else%}display:block{%endif%}">
+									<p><a class="btn btn-primary loginBtn" href="#" onClick="ga('send', 'event', 'Account', 'Click', 'Log In-Register-My account');"><span class="glyphicon glyphicon-log-in"></span> Log in to continue</a></p>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- End 3. Main drawer for areas & settings -->
+			<!--	End Drawer Sidebar -->
+
+			<!--	Start Map Area -->
+			<div class="col-xs-12 col-sm-8 col-md-9 sidebar-offcanvas max-height" id="map-wrapper">
+				<div id="map">
+					<button class="btn btn-primary visible-xs" id="close-map">Close map</button>
+				</div>
+			</div>
+			<!-- End Map Area -->
+
+		</div>
+		<!-- End Main Content Row -->
+	</div></div>
+	<!-- End Wrap -->
+
+	<!-- Start Footer -->
+	<div id="footer">
+	      <div class="container">
+			<a href="http://www.nola.gov" class="nola-link">City of New Orleans</a>
+	      </div>
+	</div>
+	<!-- End Footer -->
+
+	<!-- START MODALS -->
+
+	<!-- Start Loading Modal (Appears on login) -->
+	<div class="modal fade" id="loading-modal" tabindex="-1" role="dialog" aria-labelledby="Loading" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+					<h4 class="modal-title">One moment please...</h4>
+				</div>
+				<div class="modal-body">
+					<img src="../static/img/loader.gif" />
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Intro Modal -->
+
+	<!-- Start Error Modal (Appears on geometry error) -->
+	<div class="modal fade" id="geomerr-modal" tabindex="-1" role="dialog" aria-labelledby="Error" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+					<h4 class="modal-title">Oops! Something went wrong when saving the area you defined.<br/>Please try drawing it again.</h4>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Error Modal -->
+
+	<!-- Start Intro Modal (Appears on page load) -->
+	<div class="modal fade" id="intro-modal" tabindex="-1" role="dialog" aria-labelledby="Introduction" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+					<h4 class="modal-title">Welcome to NoticeMe!</h4>
+				</div>
+				<div class="modal-body">
+					<h4>Please Note:</h4>
+					<p>NoticeMe is a handy tool, but is not part of the City’s legal public notice requirements.</p>
+					<p>NoticeMe was designed to supplement those other forms of notice, but not replace them.</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal">I Understand</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Intro Modal -->
+
+	<!-- Start Drawing Instruction Modal -->
+	<div class="modal fade" id="draw-modal" tabindex="-1" role="dialog" aria-labelledby="Draw an area" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title">Drawing an area</h4>
+				</div>
+				<div class="modal-body">
+					<ol class="hidden-xs">
+						<li>Click the screen where you want to start drawing</li>
+						<li>Click again to end and start a new segment.
+						<li>Draw the area where you wish to be notified.</li>
+						<li><strong>Double-click</strong> to finish your area.</li>
+					</ol>
+					<ol class="visible-xs">
+						<li>Tap the screen where you want to start drawing</li>
+						<li>Tap again to end and start a new segment.
+						<li>Continue until you've defined the area where you wish to be notified.</li>
+						<li><strong>Double-tap</strong> to finish your area.</li>
+						<li>Close the map.</li>
+					</ol>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger" data-dismiss="modal" id="drawing-cancel">Cancel</button>&nbsp;&nbsp;&nbsp;&nbsp;
+					<button type="button" class="btn btn-primary" data-dismiss="modal">Start drawing</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Drawing Instruction Modal -->
+
+	<!-- Start Delete Confirmation Modal -->
+	<div class="modal fade" id="delete-confirm-modal" tabindex="-1" role="dialog" aria-labelledby="Draw an area" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title">Are you sure?</h4>
+				</div>
+				<div class="modal-body">
+					<p>You are about to delete an area. Are you sure you want to do this?</p>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary" data-dismiss="modal" id="delete-cancel">Cancel</button>&nbsp;&nbsp;&nbsp;&nbsp;
+					<button type="button" class="btn btn-danger" data-dismiss="modal" id="delete-confirm">Yes, delete it</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Delete Confirmation Modal -->
+
+	<!-- Start Preference Change Fader -->
+	<div class="alert alert-warning" id="alert-pref-change">
+	  <strong></strong>Your email preferences have been saved.
+	</div>
+	<!-- End Preference Change Fader -->
+
+	<!-- Start Log In Fader -->
+	<div class="alert alert-warning" id="alert-login">
+	  <strong>Welcome!</strong> You are logged in.
+	</div>
+	<!-- End Log In Fader -->
+
+	<!-- Start Log Out Fader -->
+	<div class="alert alert-warning" id="alert-logout">
+	  <strong>Goodbye!</strong> Logging out...
+	</div>
+	<!-- End Log Out Fader -->
+
+	<!-- Start Help Modal 0 -->
+	<div class="modal fade" id="help-modal-0" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title">How does NoticeMe work?</h4>
+				</div>
+				<div class="modal-body">
+					<img src="../static/img/email-screenshot.png" />
+					<p>As a part of the Neighborhood Participation Program, NoticeMe was developed to encourage citizen participation in issues pertaining to land-use.</p>
+					<p><strong>NoticeMe</strong> is a tool that allows you to <strong>sign up for email notifications</strong> for land-use changes in New Orleans.</p>
+					<p>You can add as many areas of interest as you like and specify how often you would like to receive emails.</p>
+				</div>
+				<div class="modal-footer">
+					<button class="btn btn-danger btn-lg help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 0');">End Tour</button>
+					<button class="btn btn-primary btn-lg" id="help-btn-0" onClick="ga('send', 'event', 'Help', 'Click', 'See how it works');">See how it works!</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	<!-- End Help Modal 0 -->
+
+	<!-- Start Help Modal 1 -->
+	<div class="modal fade" id="help-modal-1" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div id="help-new-areas" class="help-info">
+			<i class="sprite sprite-new_areas"></i>
+		</div>
+		<div id="help-draw-custom-area" class="help-info">
+			<i class="sprite sprite-draw_custom_area"></i>
+		</div>
+		<div id="help-use-map-control" class="help-info">
+			<i class="sprite sprite-use_map_control"></i>
+		</div>
+		<div id="help-continue-tour-1" class="help-info-btn">
+			<button class="btn btn-danger btn-lg help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 1');">End Tour</button>
+			<button class="btn btn-primary btn-lg help-btn-go" id="help-btn-1" onClick="ga('send', 'event', 'Help', 'Click', 'Continue 1');">Continue Tour</button>
+		</div>
+	</div>
+	<!-- End Help Modal 1 -->
+
+	<!-- Start Help Modal 2 -->
+	<div class="modal fade" id="help-modal-2" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div id="help-accept-changes" class="help-info">
+			<i class="sprite sprite-accept_changes"></i>
+		</div>
+		<div id="help-give-area-name" class="help-info">
+			<i class="sprite sprite-give_area_name"></i>
+		</div>
+		<div id="help-choose-notification-type" class="help-info">
+			<i class="sprite sprite-choose_notification_type"></i>
+		</div>
+		<div id="help-delete-area" class="help-info">
+			<i class="sprite sprite-delete_area"></i>
+		</div>
+		<div id="help-drawing-instructions" class="help-info">
+			<i class="sprite sprite-drawing_instructions"></i>
+		</div>
+		<div id="help-redraw-area" class="help-info">
+			<i class="sprite sprite-redraw_area"></i>
+		</div>
+		<div id="help-continue-tour-2" class="help-info-btn">
+			<button class="btn btn-danger btn-lg help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 2');">End Tour</button>
+			<button class="btn btn-primary btn-lg help-btn-go" id="help-btn-2" onClick="ga('send', 'event', 'Help', 'Click', 'Continue 2');">Continue Tour</button>
+		</div>
+	</div>
+	<!-- End Help Modal 2 -->
+
+	<!-- Start Help Modal 3 -->
+	<div class="modal fade" id="help-modal-3" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div id="help-predefined-neighborhoods" class="help-info">
+			<i class="sprite sprite-predefined_neighborhoods"></i>
+		</div>
+		<div id="help-add-neighborhood-assoc" class="help-info">
+			<i class="sprite sprite-add_neighborhood_assoc"></i>
+		</div>
+		<div id="help-continue-tour-3" class="help-info-btn">
+			<button class="btn btn-danger btn-lg help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 3');">End Tour</button>
+			<button class="btn btn-primary btn-lg help-btn-go" id="help-btn-3" onClick="ga('send', 'event', 'Help', 'Click', 'Continue 3');">Continue Tour</button>
+		</div>
+	</div>
+	<!-- End Help Modal 3 -->
+
+	<!-- Start Help Modal 4 -->
+	<div class="modal fade" id="help-modal-4" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div id="help-predefined-council-districts" class="help-info">
+			<i class="sprite sprite-predefined_council_districts"></i>
+		</div>
+		<div id="help-add-council-districts" class="help-info">
+			<i class="sprite sprite-add_council_districts"></i>
+		</div>
+		<div id="help-continue-tour-4" class="help-info-btn">
+			<button class="btn btn-danger btn-lg help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 4');">End Tour</button>
+			<button class="btn btn-primary btn-lg help-btn-go" id="help-btn-4" onClick="ga('send', 'event', 'Help', 'Click', 'Continue 4');">Continue Tour</button>
+		</div>
+	</div>
+	<!-- End Help Modal 4 -->
+
+	<!-- Start Help Modal 5 -->
+	<div class="modal fade" id="help-modal-5" data-backdrop="static" tabindex="-1" role="dialog" aria-labelledby="Help screen" aria-hidden="true">
+		<div id="help-account-prefs" class="help-info">
+			<i class="sprite sprite-account_prefs"></i>
+		</div>
+		<div id="help-change-email-prefs" class="help-info">
+			<i class="sprite sprite-change_email_prefs"></i>
+		</div>
+		<div id="help-continue-tour-5" class="help-info-btn">
+			<button class="btn btn-danger btn-lg help-btn-go help-btn-dismiss" data-dismiss="modal" onClick="ga('send', 'event', 'Help', 'Click', 'End Tour 5');">End Tour</button>
+			<button class="btn btn-primary btn-lg" id="help-btn-5" onClick="ga('send', 'event', 'Help', 'Click', 'Restart Tour');">Restart Tour</button>
+		</div>
+	</div>
+	<!-- End Help Modal 5 -->
+
+    <!-- Javascript -->
+    <script src="http://code.jquery.com/jquery.js"></script>
+    <script src="../static/js/bootstrap.js"></script>
+    <script src="../static/js/underscore-min.js"></script>
+    <script src="../static/js/core.js"></script>
+	<script src="../static/js/notice.js"></script>
+    <script type="text/javascript">
+        $('.loginBtn').click(function () {
+			navigator.id.request({
+				siteName: 'NoticeMe',
+				backgroundColor: '#006699',
+				oncancel: function() { $('#loading-modal').modal('hide'); }
+				//, siteLogo: '/static/img/NoticeMe-Logo.png' //this image must be served from an https:// source.
+			});
+			$('#loading-modal').modal();
+		});
+
+        $('#logoutBtn').click(function () {document.cookie = 'noticeme_user=;'; navigator.id.logout();});
+
+        navigator.id.watch({
+            loggedInUser: '{{ session.email }}' || null,
+			onready: function () {
+
+			},
+            onlogin: function (assertion) {
+				$('#loading-modal').modal();
+                $.post('/login', {'assertion': assertion})
+                .done(function () {
+					// Fire intro modal
+					$('#loading-modal').modal('hide');
+					$('#intro-modal').modal();
+					$.getJSON('/_user', function (data) {signIn(data);})})
+                .fail(function () {
+					navigator.id.logout();
+					$('#loading-modal').modal('hide');
+				});
+            },
+            onlogout: function () {
+				createAutoClosingAlert("#alert-logout", 2000);
+                $.post('/logout')
+                .always(function () {
+					window.location.reload();
+					resize();
+				});
+            }
+        });
+    </script>
+	<!-- start Google Analytics -->
+	<script>
+		  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+		  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+		  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+		  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+		  ga('create', '<analytics id>', 'nola.gov');
+		  ga('send', 'pageview');
+	</script>
+	<!-- end Google Analytics -->
+
+	<script>
+		// Include the UserVoice JavaScript SDK (only needed once on a page)
+		UserVoice=window.UserVoice||<uservoice script>;
+
+		//
+		// UserVoice Javascript SDK developer documentation:
+		// https://www.uservoice.com/o/javascript-sdk
+		//
+
+		// Set colors
+		UserVoice.push(['set', {
+		  accent_color: '#448dd6',
+		  trigger_color: 'white',
+		  trigger_background_color: '#e23a39'
+		}]);
+		UserVoice.push(['set', 'ticket_custom_fields', {'Web Application': 'NoticeMe'}])
+		// Identify the user and pass traits
+		// To enable, replace sample data with actual user traits and uncomment the line
+		UserVoice.push(['identify', {
+		  //email:      'john.doe@example.com', // User’s email address
+		  //name:       'John Doe', // User’s real name
+		  //created_at: 1364406966, // Unix timestamp for the date the user signed up
+		  //id:         123, // Optional: Unique id of the user (if set, this should not change)
+		  //type:       'Owner', // Optional: segment your users by type
+		  //account: {
+		  //  id:           123, // Optional: associate multiple users with a single account
+		  //  name:         'Acme, Co.', // Account name
+		  //  created_at:   1364406966, // Unix timestamp for the date the account was created
+		  //  monthly_rate: 9.99, // Decimal; monthly rate of the account
+		  //  ltv:          1495.00, // Decimal; lifetime value of the account
+		  //  plan:         'Enhanced' // Plan name for the account
+		  //}
+		}]);
+
+		// Add default trigger to the bottom-right corner of the window:
+		//UserVoice.push(['addTrigger', { mode: 'contact', trigger_position: 'top-right' }]);
+
+		// Or, use your own custom trigger:
+		UserVoice.push(['addTrigger', '#UVBtn', { mode: 'contact' }]);
+
+		// Autoprompt for Satisfaction and SmartVote (only displayed under certain conditions)
+		UserVoice.push(['autoprompt', {}]);
+	</script>
+
+  </body>
+</html>

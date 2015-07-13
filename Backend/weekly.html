@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="format-detection" content="address=no" />
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="format-detection" content="date=no" />
+        <title>NoticeMe Digest for the Week Ending {{procdate}}</title>
+        <style type="text/css">
+            body {
+                font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Bitstream Vera Sans", "Trebuchet MS", Verdana, "Verdana Ref", sans-serif;
+                color: #606060;
+                margin: 8px 20px;
+                }
+            hr {
+                display: block; height: 1px;
+                border: 0; border-top: 1px solid #069;
+                margin: 20px 0; padding: 0;}
+            h1 {
+                font-size: 32px;
+                font-weight: normal;
+                color: #069;}
+            h2 {
+                font-size: 28px;
+                color: #404040;
+                font-weight: normal;}
+            h3 {
+                font-size: 24px;
+                font-weight: normal;
+                color: #900;
+                margin-bottom: 0;}
+            h4 {
+                font-size: 16px;
+                color: #606060;
+                margin-bottom: 0;
+                font-weight: bold;}
+            h3 + p, h3 + ul, h4 + p, .meta p  {
+                margin-top: 0;}
+            strong {
+                color: #505050;}
+            .small {
+                font-size: 80%;
+                color: #606060;}
+            .item, #digest{
+                border-bottom: 1px solid #069;
+                padding-bottom: 20px;}
+            .footer {
+                margin: 20px 0 40px 0;}
+            a:hover {
+                text-decoration: none;}
+            .btn {
+				display: inline-block;
+				padding: 6px 12px;
+				margin-bottom: 10px;
+				font-size: 14px;
+				font-weight: normal;
+				line-height: 1.428571429;
+				text-align: center;
+				white-space: nowrap;
+				vertical-align: middle;
+				cursor: pointer;
+				background-image: none;
+				border: 1px solid transparent;
+				border-radius: 4px;
+				-webkit-user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				-o-user-select: none;
+				user-select: none;
+				color: #ffffff;
+				background-color: #428bca;
+				border-color: #357ebd;
+				text-decoration: none;}
+				.btn:hover {
+				color: #ffffff;
+				background-color: #3276b1;
+				border-color: #285e8e;}
+			a.no-link {
+				text-decoration: none;
+				color: #606060;}
+        </style>
+    </head>
+    <body>
+        <h1>NoticeMe Digest<br/>For The Week Ending {{procdate}}</h1>
+        <hr>
+        <h2>Summary of activity within your areas </h2>
+        <div id="digest">
+            {% for area in digest %}
+            <h3>{{area.name}}:</h3>
+                <ul>
+                    {% for item in area.rows %}<li><b><a href="#" class="no-link">{{item.Location}}</a></b>&mdash;{{item.displayname}}<!--<br/>(Ref code {{item.RefCode}})--></li>{% endfor %}
+                </ul>
+            {% endfor %}
+        </div>
+        <div id="details">
+            <h2>Details</h2>
+            {% for item in details %}
+            {% include item.template %}
+            {% endfor %}
+        </div>
+        <div class="footer">
+            <p>Change your Notification Preferences at <a href="http://noticeme.nola.gov">noticeme.nola.gov</a></p>
+        </div>
+			<img src="http://www.google-analytics.com/collect?v=1&tid=UA-18797759-17&cid={{gacid}}&t=event&ec=email&ea=open&el={{gadate}}&cs=NoticeMe&cm=email&cn=NoticeMe"/>
+    </body>
+</html>

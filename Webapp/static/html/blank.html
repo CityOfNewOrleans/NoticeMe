@@ -1,0 +1,46 @@
+<html>
+    <head>
+        <title>NoticeMe</title>
+        <style type="text/css">
+            body
+            {
+                background-color: #006699;
+
+            }
+            
+            img.ri
+            {
+                position: absolute;
+                max-width: 40%;
+                top: 30%;
+                left: 30%;
+            }
+
+            img.ri:empty
+            {
+                top: 50%;
+                left: 50%;
+                -webkit-transform: translate(-50%, -50%);
+                -moz-transform: translate(-50%, -50%);
+                -ms-transform: translate(-50%, -50%);
+                -o-transform: translate(-50%, -50%);
+                transform: translate(-50%, -50%);
+            }
+
+            @media screen and (orientation: portrait) {
+              img.ri {
+                  max-width: 40%;
+              }
+            }
+
+            @media screen and (orientation: landscape) {
+              img.ri {
+                  max-height: 40%;
+              }
+            }
+        </style>
+    </head>
+    <body>
+        <img class="ri" src="/static/img/NoticeMe-Logo.png">
+    </body>
+</html>

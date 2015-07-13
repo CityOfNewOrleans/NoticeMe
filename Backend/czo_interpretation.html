@@ -1,0 +1,20 @@
+            <div class="item">
+                {% if item.data.Location != '' %}
+                    <h3><a href="http://onestopapp.nola.gov/Redirect.aspx?SearchString={{item.data.RefCode}}">{{item.data.Location}}{{' ('~item.data.Name~') ' if item.data.Name != item.data.Location else ' '}}</a><span class="small">(Ref. Code: {{item.data.RefCode}})<br />
+                {% else %}
+                    <h3><a href="http://onestopapp.nola.gov/Redirect.aspx?SearchString={{item.data.RefCode}}">{{item.data.Name}}</a><span class="small">(Ref. Code: {{item.data.RefCode}})<br />
+                {% endif %}
+                <strong>{{item.displayname}}</strong></span></h3>
+                <div class="meta">
+                    <strong>Docket Number:</strong> {{item.data.DocketNum}}<br />
+                    <strong>Type:</strong> {{item.data.Type}}</p>
+                    <strong>Memorandum Available:</strong> {% if item.data.DocsPublic == 0 %}No{% else %}Yes{% endif %}</p></p>
+                </div>
+                <div class="detail" >
+                    <h4>Description</h4>
+                    <p>
+                        {{item.data.Descr}}
+                    </p>                
+                    <p><a href="http://noticeme.nola.gov/about#zoningmemo" target="_blank" >What Happens Now?</a></p>
+                </div>
+            </div>

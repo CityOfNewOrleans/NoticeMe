@@ -1,0 +1,45 @@
+body
+{
+    background-color: #ffffff;
+    overflow: hidden;
+}
+#map
+{
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+#drag
+{
+    width: 250px;
+    height: 150px;
+    padding: 0.5em;
+    z-index: 100;
+    left: 70px;
+    top: 40px;
+    background-color: #eeeeee;
+    border: 1px solid #444444;
+    position: absolute;
+    border-radius: 5px;
+    box-shadow: 5px 5px 10px #777777;
+}
+#print
+{
+    top: 220px;
+    left: 70px;
+    min-width: 75px;
+    padding: 0.25em;
+    background-color: #eeeeee;
+    border: 1px solid #444444;
+    position: absolute;
+    border-radius: 5px;
+    box-shadow: 5px 5px 10px #777777;
+    cursor: pointer;
+    text-align: center;
+}
+#loadimg
+{
+    vertical-align: middle;
+    display: none;
+}
